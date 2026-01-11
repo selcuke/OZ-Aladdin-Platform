@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateAladdinInsight } from '../services/geminiService';
+import { MOCK_PORTFOLIO } from '../constants';
 import { Send, User, BrainCircuit } from 'lucide-react';
 
 interface Message {
@@ -32,7 +33,21 @@ const AladdinAI: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await generateAladdinInsight(userMsg, "Current Portfolio: Global Equity Alpha Fund. AUM: 4.5B USD. Risk Level: Moderate. Top Holding: MSFT.");
+      // Construct dynamic context from current portfolio state
+      const p = MOCK_PORTFOLIO;
+      const holdingsList = p.assets.map(a => `${a.ticker} (${a.allocation}%, ESG: ${a.esgScore})`).join(', ');
+      
+      const contextData = `
+        Portfolio Name: ${p.name} (ID: ${p.id})
+        Manager: ${p.manager}
+        Total AUM: ${(p.totalAum / 1000000000).toFixed(2)}B ${p.currency}
+        Risk Level: ${p.riskLevel}
+        YTD Return: ${p.ytdReturn}%
+        Sharpe Ratio: ${p.sharpeRatio}
+        Holdings: ${holdingsList}
+      `.trim();
+
+      const response = await generateAladdinInsight(userMsg, contextData);
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'assistant', content: "I am currently unable to process that request due to a connection issue." }]);
